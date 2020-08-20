@@ -42,7 +42,7 @@ public class IssueTrackingSystemService {
         long actualHoursOfWork = 0;
 
         for (long i = 0; i < hoursNeededForWork; i++) {
-            if(!isWorkingHour(submissionDate.getHour() + hoursNeededForWork)) {
+            if(!isWorkingHour(submissionDate.getHour() + hoursNeededForWork, submissionDate.getMinute())) {
                 if (submissionDate.getDayOfWeek() == DayOfWeek.FRIDAY) {
                     actualHoursOfWork += 48;
                 }
@@ -72,7 +72,7 @@ public class IssueTrackingSystemService {
     }
 
     public void validateSubmissionDate(LocalDateTime submissionDate) throws CalculateDueDateException {
-        if(submissionDate == null || !isWorkingDay(submissionDate.getDayOfWeek()) || !isWorkingHour(submissionDate.getHour())) {
+        if(submissionDate == null || !isWorkingDay(submissionDate.getDayOfWeek()) || !isWorkingHour(submissionDate.getHour(), submissionDate.getMinute())) {
             String errorMessage = submissionDate + " is outside of working hours. Working hours are between 9AM to 5PM, from Monday to Friday.";
             LOGGER.error(errorMessage);
             throw new CalculateDueDateException(errorMessage);
@@ -94,8 +94,11 @@ public class IssueTrackingSystemService {
         return true;
     }
 
-    private boolean isWorkingHour(long hour) {
-       return hour >= configuration.getWorkStartHour() && hour < configuration.getWorkEndHour();
+    private boolean isWorkingHour(long hour, long minutes) {
+        if (hour == configuration.getWorkEndHour() && minutes > 0) {
+            return false;
+        }
+        return hour >= configuration.getWorkStartHour() && hour < configuration.getWorkEndHour();
     }
 
     private boolean isWorkingDay(DayOfWeek dayOfWeek) {
