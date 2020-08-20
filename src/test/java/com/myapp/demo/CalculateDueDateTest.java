@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.Month;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
 class CalculateDueDate {
@@ -23,6 +24,14 @@ class CalculateDueDate {
     private long workHours;
 
     private static final LocalDateTime SUBMISSION_DATE = LocalDateTime.of(2020, Month.AUGUST, 20, 9, 0);
+
+    private static final Duration POSITIVE_TURNAROUND = Duration.ofHours(7);
+    private static final Duration NEGATIVE_TURNAROUND = Duration.ofHours(-7);
+    private static final Duration ZERO_TURNAROUND = Duration.ofHours(0);
+
+    private static final LocalDateTime SUBMISSION_DATE_INSIDE_WORKING_HOURS = LocalDateTime.of(2020, Month.AUGUST, 20, 16, 59);
+    private static final LocalDateTime SUBMISSION_DATE_OUTSIDE_WORKING_HOURS = LocalDateTime.of(2020, Month.AUGUST, 20, 17, 0);
+    private static final LocalDateTime SUBMISSION_DATE_OUTSIDE_WORKING_DAYS = LocalDateTime.of(2020, Month.AUGUST, 22, 13, 0);
 
     @Test
     public void ShouldReturnSubmissionDatePlusTurnaroundTime() throws CalculateDueDateException {
@@ -59,6 +68,37 @@ class CalculateDueDate {
         LocalDateTime expectedDueDate2 = LocalDateTime.of(2020, Month.AUGUST, 25, 16, 0);
         LocalDateTime actualDueDate2 = issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE, turnAroundTime2);
         assertEquals(expectedDueDate2, actualDueDate2);
+    }
+
+    @Test
+    public void ShouldNotThrowExceptionWhenTurnaroundTimeIsPositive() throws CalculateDueDateException {
+        issueTrackingSystemService.validateTurnaroundTime(POSITIVE_TURNAROUND);
+    }
+
+    @Test
+    public void ShouldThrowExceptionWhenTurnaroundTimeIsNegativeOrZero() {
+        assertThrows(Exception.class, () -> issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE, Duration.ZERO));
+        assertThrows(Exception.class, () -> issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE, Duration.ofHours(-5)));
+    }
+
+    @Test
+    public void ShouldNotThrowExceptionWhenSubmissionDateIsOnAWorkday() throws CalculateDueDateException {
+        issueTrackingSystemService.validateSubmissionDate(SUBMISSION_DATE_INSIDE_WORKING_HOURS);
+    }
+
+    @Test
+    public void ShouldThrowExceptionWhenSubmissionDateIsOutsideOfWorkHours() {
+        assertThrows(Exception.class, () -> issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE_OUTSIDE_WORKING_HOURS, POSITIVE_TURNAROUND));
+    }
+
+    @Test
+    public void ShouldThrowExceptionWhenSubmissionDateIsOnWeekend() {
+        assertThrows(Exception.class, () -> issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE_OUTSIDE_WORKING_DAYS, POSITIVE_TURNAROUND));
+    }
+
+    @Test
+    public void ShouldThrowExceptionWhenSubmissionDateIsNull() {
+        assertThrows(Exception.class, () -> issueTrackingSystemService.CalculateDueDate(null, POSITIVE_TURNAROUND));
     }
 
 }
