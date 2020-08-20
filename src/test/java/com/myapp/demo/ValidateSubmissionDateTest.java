@@ -10,10 +10,10 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.Month;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-class CalculateDueDate {
+class ValidateSubmissionDateTest {
 
     @Autowired
     IssueTrackingSystemService issueTrackingSystemService;
@@ -23,15 +23,9 @@ class CalculateDueDate {
             20,
             9,
             0);
-    private static final Duration TURNAROUND_TIME = Duration.ofHours(7);
 
     @Test
-    public void ShouldReturnSubmissionDatePlusTurnaroundTime() throws CalculateDueDateException {
-
-        LocalDateTime resolveDate = issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE, TURNAROUND_TIME);
-        LocalDateTime expectedResolveDate = LocalDateTime.of(2020, Month.AUGUST, 20, 16, 0);
-
-        assertEquals(resolveDate, expectedResolveDate);
+    public void ShouldNotThrowExceptionWhenSubmissionDateIsOnAWorkday() throws CalculateDueDateException {
+        issueTrackingSystemService.validateSubmissionDate(SUBMISSION_DATE);
     }
-
 }
