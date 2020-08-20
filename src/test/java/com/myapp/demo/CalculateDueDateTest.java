@@ -18,11 +18,7 @@ class CalculateDueDate {
     @Autowired
     IssueTrackingSystemService issueTrackingSystemService;
 
-    private static final LocalDateTime SUBMISSION_DATE = LocalDateTime.of(2020,
-            Month.AUGUST,
-            20,
-            9,
-            0);
+    private static final LocalDateTime SUBMISSION_DATE = LocalDateTime.of(2020, Month.AUGUST, 20, 9, 0);
     private static final Duration TURNAROUND_TIME = Duration.ofHours(7);
 
     @Test

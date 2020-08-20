@@ -18,14 +18,17 @@ class ValidateSubmissionDateTest {
     @Autowired
     IssueTrackingSystemService issueTrackingSystemService;
 
-    private static final LocalDateTime SUBMISSION_DATE = LocalDateTime.of(2020,
-            Month.AUGUST,
-            20,
-            9,
-            0);
+    private static final LocalDateTime SUBMISSION_DATE_INSIDE_WORKING_HOURS = LocalDateTime.of(2020, Month.AUGUST, 20, 16, 59);
+    private static final LocalDateTime SUBMISSION_DATE_OUTSIDE_WORKING_HOURS = LocalDateTime.of(2020, Month.AUGUST, 20, 17, 0);
 
     @Test
     public void ShouldNotThrowExceptionWhenSubmissionDateIsOnAWorkday() throws CalculateDueDateException {
-        issueTrackingSystemService.validateSubmissionDate(SUBMISSION_DATE);
+        issueTrackingSystemService.validateSubmissionDate(SUBMISSION_DATE_INSIDE_WORKING_HOURS);
     }
+
+    @Test
+    public void ShouldThrowExceptionWhenSubmissionDateIsNotOnAWorkday() {
+        assertThrows(Exception.class, () -> issueTrackingSystemService.validateSubmissionDate(SUBMISSION_DATE_OUTSIDE_WORKING_HOURS));
+    }
+
 }

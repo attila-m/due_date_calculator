@@ -5,6 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
@@ -19,14 +20,24 @@ public class IssueTrackingSystemService {
     }
 
     public void validateSubmissionDate(LocalDateTime submissionDate) throws CalculateDueDateException {
-        if(!isSubmissionDateOnAWorkday(submissionDate)) {
+        if(!isDuringWorkingHours(submissionDate)) {
             String errorMessage = submissionDate + " is not a workday.";
             LOGGER.error(errorMessage);
             throw new CalculateDueDateException(errorMessage);
         }
     }
 
-    public boolean isSubmissionDateOnAWorkday(LocalDateTime submissionDate) {
+    public boolean isDuringWorkingHours(LocalDateTime date) {
+
+        if (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY ) {
+            return false;
+        }
+
+        if (date.getHour() < 9 || date.getHour() > 16) {
+            return false;
+        }
+
         return true;
     }
+
 }
