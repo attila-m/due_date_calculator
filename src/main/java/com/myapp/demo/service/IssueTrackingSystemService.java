@@ -1,7 +1,7 @@
 package com.myapp.demo.service;
 
-import com.myapp.demo.exception.CalculateDueDateException;
 import com.myapp.demo.configuration.ImmutableConfiguration;
+import com.myapp.demo.exception.CalculateDueDateException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,45 +14,66 @@ import java.time.LocalDateTime;
 @Service
 public class IssueTrackingSystemService {
 
+    private static final Logger LOGGER = LogManager.getLogger(IssueTrackingSystemService.class);
+
     private ImmutableConfiguration configuration;
+
     IssueTrackingSystemService(@Autowired ImmutableConfiguration configuration) {
         this.configuration = configuration;
     }
 
-    private static final Logger LOGGER = LogManager.getLogger(IssueTrackingSystemService.class);
-
     public LocalDateTime CalculateDueDate(LocalDateTime submissionDate, Duration turnaroundTime) throws CalculateDueDateException{
 
-        LocalDateTime resolveDate = submissionDate;
+        Duration duration = Duration.ZERO;
 
         validateSubmissionDate(submissionDate);
         validateTurnaroundTime(turnaroundTime);
 
-        resolveDate = resolveDate
-                .plusDays(calculateWorkdays(submissionDate.getDayOfWeek(), turnaroundTime))
-                .plusHours(turnaroundTime.toHours() % configuration.getWorkHours());
+        duration = duration.plusHours(getRemainderDaysNeededForWorkInHours(turnaroundTime.toHours(), submissionDate));
+        duration = duration.plusDays(getFullDaysNeededForWork(turnaroundTime.toHours(), submissionDate.getDayOfWeek()));
 
-        return resolveDate;
+        LocalDateTime dueDate = submissionDate.plus(duration);
+
+        return dueDate;
     }
 
-    public long calculateWorkdays(DayOfWeek dayOfWeek, Duration turnaroundTime) {
-        long fullDays = turnaroundTime.toHours() / configuration.getWorkHours();
+    private long getRemainderDaysNeededForWorkInHours(long turnaroundHours, LocalDateTime submissionDate) {
+        long hoursNeededForWork = turnaroundHours % configuration.getWorkHours();
+        long actualHoursOfWork = 0;
 
-        DayOfWeek currentDay = dayOfWeek;
-        long fullWorkDays = 0;
-
-        for (int i = 0; i < fullDays; i++) {
-            if (!isWeekendDay(currentDay)) {
-                fullWorkDays++;
+        for (long i = 0; i < hoursNeededForWork; i++) {
+            if(!isWorkingHour(submissionDate.getHour() + hoursNeededForWork)) {
+                if (submissionDate.getDayOfWeek() == DayOfWeek.FRIDAY) {
+                    actualHoursOfWork += 48;
+                }
+                actualHoursOfWork += 24 - configuration.getWorkHours();
+            } else {
+                actualHoursOfWork += 1;
             }
-            currentDay.plus(1);
         }
-        return fullWorkDays;
+        return actualHoursOfWork;
+    }
+
+    private long getFullDaysNeededForWork(long turnaroundHours, DayOfWeek dayOfWeek) {
+        long daysNeededForWork = turnaroundHours / configuration.getWorkHours();
+        long actualDaysOfWork = 0;
+
+        for (long i = daysNeededForWork; i > 0;) {
+            if (isWorkingDay(dayOfWeek.plus(1))) {
+                i--;
+                dayOfWeek = dayOfWeek.plus(1);
+                actualDaysOfWork += 1;
+            } else {
+                actualDaysOfWork += 2;
+                dayOfWeek = dayOfWeek.plus(2);
+            }
+        }
+        return actualDaysOfWork;
     }
 
     public void validateSubmissionDate(LocalDateTime submissionDate) throws CalculateDueDateException {
-        if(!isDuringWorkingHours(submissionDate)) {
-            String errorMessage = submissionDate + " is not during working hours. Working hours are between 9AM to 5PM, from Monday to Friday.";
+        if(submissionDate == null || !isWorkingDay(submissionDate.getDayOfWeek()) || !isWorkingHour(submissionDate.getHour())) {
+            String errorMessage = submissionDate + " is outside of working hours. Working hours are between 9AM to 5PM, from Monday to Friday.";
             LOGGER.error(errorMessage);
             throw new CalculateDueDateException(errorMessage);
         }
@@ -73,20 +94,12 @@ public class IssueTrackingSystemService {
         return true;
     }
 
-    private boolean isDuringWorkingHours(LocalDateTime date) {
-
-        if (isWeekendDay(date.getDayOfWeek())) {
-            return false;
-        }
-
-        if (date.getHour() < configuration.getWorkStartHour() || date.getHour() > configuration.getWorkEndHour() - 1) {
-            return false;
-        }
-
-        return true;
+    private boolean isWorkingHour(long hour) {
+       return hour >= configuration.getWorkStartHour() && hour < configuration.getWorkEndHour();
     }
 
-    private boolean isWeekendDay(DayOfWeek dayOfWeek) {
-        return dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
+    private boolean isWorkingDay(DayOfWeek dayOfWeek) {
+        return dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY;
     }
+
 }
