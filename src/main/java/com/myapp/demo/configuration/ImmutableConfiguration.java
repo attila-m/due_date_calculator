@@ -1,9 +1,9 @@
-package configuration;
+package com.myapp.demo.configuration;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConstructorBinding;
 
-@ConfigurationProperties(prefix = "admin.configuration")
+@ConfigurationProperties(prefix = "admin.com.myapp.demo.configuration")
 @ConstructorBinding
 public class ImmutableConfiguration {
     private final long workStartHour;

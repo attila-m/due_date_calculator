@@ -19,7 +19,7 @@ class CalculateDueDate {
     @Autowired
     IssueTrackingSystemService issueTrackingSystemService;
 
-    @Value("${admin.configuration.workHours}")
+    @Value("${admin.com.myapp.demo.configuration.workHours}")
     private long workHours;
 
     private static final LocalDateTime SUBMISSION_DATE = LocalDateTime.of(2020, Month.AUGUST, 20, 9, 0);

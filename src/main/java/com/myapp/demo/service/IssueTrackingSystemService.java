@@ -1,7 +1,7 @@
 package com.myapp.demo.service;
 
 import com.myapp.demo.exception.CalculateDueDateException;
-import configuration.ImmutableConfiguration;
+import com.myapp.demo.configuration.ImmutableConfiguration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;

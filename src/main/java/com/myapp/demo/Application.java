@@ -1,6 +1,6 @@
 package com.myapp.demo;
 
-import configuration.ImmutableConfiguration;
+import com.myapp.demo.configuration.ImmutableConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
