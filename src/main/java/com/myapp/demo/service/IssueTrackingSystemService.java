@@ -1,8 +1,10 @@
 package com.myapp.demo.service;
 
 import com.myapp.demo.exception.CalculateDueDateException;
+import configuration.ImmutableConfiguration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.DayOfWeek;
@@ -12,9 +14,10 @@ import java.time.LocalDateTime;
 @Service
 public class IssueTrackingSystemService {
 
-    public static final long WORK_STARTS_AT = 9;
-    public static final long WORK_ENDS_AT = 17;
-    public static final long WORK_HOURS = 8;
+    private ImmutableConfiguration configuration;
+    IssueTrackingSystemService(@Autowired ImmutableConfiguration configuration) {
+        this.configuration = configuration;
+    }
 
     private static final Logger LOGGER = LogManager.getLogger(IssueTrackingSystemService.class);
 
@@ -27,13 +30,13 @@ public class IssueTrackingSystemService {
 
         resolveDate = resolveDate
                 .plusDays(calculateWorkdays(submissionDate.getDayOfWeek(), turnaroundTime))
-                .plusHours(turnaroundTime.toHours() % 8);
+                .plusHours(turnaroundTime.toHours() % configuration.getWorkHours());
 
         return resolveDate;
     }
 
     public long calculateWorkdays(DayOfWeek dayOfWeek, Duration turnaroundTime) {
-        long fullDays = turnaroundTime.toHours() / WORK_HOURS;
+        long fullDays = turnaroundTime.toHours() / configuration.getWorkHours();
 
         DayOfWeek currentDay = dayOfWeek;
         long fullWorkDays = 0;
@@ -76,7 +79,7 @@ public class IssueTrackingSystemService {
             return false;
         }
 
-        if (date.getHour() < WORK_STARTS_AT || date.getHour() > WORK_ENDS_AT - 1) {
+        if (date.getHour() < configuration.getWorkStartHour() || date.getHour() > configuration.getWorkEndHour() - 1) {
             return false;
         }
 
