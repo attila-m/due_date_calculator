@@ -15,26 +15,39 @@ import java.time.LocalDateTime;
 public class IssueTrackingSystemService {
 
     private static final Logger LOGGER = LogManager.getLogger(IssueTrackingSystemService.class);
-
     private ImmutableConfiguration configuration;
-
     IssueTrackingSystemService(@Autowired ImmutableConfiguration configuration) {
         this.configuration = configuration;
     }
 
-    public LocalDateTime CalculateDueDate(LocalDateTime submissionDate, Duration turnaroundTime) throws CalculateDueDateException{
+    public LocalDateTime calculateDueDate(LocalDateTime submissionDate, Duration turnaroundTime) throws CalculateDueDateException{
 
         Duration duration = Duration.ZERO;
 
         validateSubmissionDate(submissionDate);
         validateTurnaroundTime(turnaroundTime);
 
-        duration = duration.plusHours(getRemainderDaysNeededForWorkInHours(turnaroundTime.toHours(), submissionDate));
-        duration = duration.plusDays(getFullDaysNeededForWork(turnaroundTime.toHours(), submissionDate.getDayOfWeek()));
+        if (checkIfIssueFitsCurrentDay(turnaroundTime.toHours(), submissionDate)){
+            duration = duration.plusHours(turnaroundTime.toHours());
+        } else {
+            duration = duration.plusHours(getRemainderDaysNeededForWorkInHours(turnaroundTime.toHours(), submissionDate));
+            duration = duration.plusDays(getFullDaysNeededForWork(turnaroundTime.toHours(), submissionDate.getDayOfWeek()));
+        }
 
         LocalDateTime dueDate = submissionDate.plus(duration);
 
         return dueDate;
+    }
+
+    private boolean checkIfIssueFitsCurrentDay(long turnaroundHours, LocalDateTime submissionDate) {
+        long taskFinishHour = Duration.ofHours(submissionDate.getHour()).plusHours(turnaroundHours).toHours();
+
+        if (taskFinishHour < configuration.getWorkEndHour() ||
+                (taskFinishHour == configuration.getWorkEndHour() && submissionDate.getMinute() == 0)) {
+            return true;
+        }
+
+        return false;
     }
 
     private long getRemainderDaysNeededForWorkInHours(long turnaroundHours, LocalDateTime submissionDate) {
@@ -71,15 +84,15 @@ public class IssueTrackingSystemService {
         return actualDaysOfWork;
     }
 
-    public void validateSubmissionDate(LocalDateTime submissionDate) throws CalculateDueDateException {
+    private void validateSubmissionDate(LocalDateTime submissionDate) throws CalculateDueDateException {
         if(submissionDate == null || !isWorkingDay(submissionDate.getDayOfWeek()) || !isWorkingHour(submissionDate.getHour(), submissionDate.getMinute())) {
-            String errorMessage = submissionDate + " is outside of working hours. Working hours are between 9AM to 5PM, from Monday to Friday.";
+            String errorMessage = submissionDate + " is outside of working hours. Working hours are between 9.00 to 17.00, from Monday to Friday.";
             LOGGER.error(errorMessage);
             throw new CalculateDueDateException(errorMessage);
         }
     }
 
-    public void validateTurnaroundTime(Duration turnaroundTime) throws CalculateDueDateException {
+    private void validateTurnaroundTime(Duration turnaroundTime) throws CalculateDueDateException {
         if(!isTurnaroundTimeGreaterThanZero(turnaroundTime)) {
             String errorMessage = turnaroundTime + " is not a valid value. Turnaround time should be more than zero.";
             LOGGER.error(errorMessage);
@@ -94,11 +107,11 @@ public class IssueTrackingSystemService {
         return true;
     }
 
-    private boolean isWorkingHour(long hour, long minutes) {
-        if (hour == configuration.getWorkEndHour() && minutes > 0) {
+    private boolean isWorkingHour(long hour, long minute) {
+        if (hour == configuration.getWorkEndHour() && minute != 0) {
             return false;
         }
-        return hour >= configuration.getWorkStartHour() && hour < configuration.getWorkEndHour();
+        return hour >= configuration.getWorkStartHour() && hour <= configuration.getWorkEndHour();
     }
 
     private boolean isWorkingDay(DayOfWeek dayOfWeek) {

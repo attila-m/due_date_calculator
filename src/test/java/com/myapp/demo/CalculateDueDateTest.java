@@ -23,11 +23,11 @@ class CalculateDueDate {
     @Value("${admin.configuration.workHours}")
     private long workHours;
 
-    private static final LocalDateTime SUBMISSION_DATE = LocalDateTime.of(2020, Month.AUGUST, 20, 9, 0);
+    private static final LocalDateTime SUBMISSION_DATE = LocalDateTime.of(2020, Month.AUGUST, 20, 9, 59);
 
-    private static final Duration POSITIVE_TURNAROUND = Duration.ofHours(7);
+    private static final Duration POSITIVE_WHOLE_DAY_TURNAROUND = Duration.ofHours(8);
 
-    private static final LocalDateTime SUBMISSION_DATE_INSIDE_WORKING_HOURS = LocalDateTime.of(2020, Month.AUGUST, 20, 16, 59);
+    private static final LocalDateTime SUBMISSION_DATE_INSIDE_WORKING_HOURS = LocalDateTime.of(2020, Month.AUGUST, 20, 17, 0);
     private static final LocalDateTime SUBMISSION_DATE_OUTSIDE_WORKING_HOURS = LocalDateTime.of(2020, Month.AUGUST, 20, 17, 1);
     private static final LocalDateTime SUBMISSION_DATE_OUTSIDE_WORKING_DAYS = LocalDateTime.of(2020, Month.AUGUST, 22, 13, 0);
 
@@ -35,8 +35,8 @@ class CalculateDueDate {
     public void ShouldReturnSubmissionDatePlusTurnaroundTime() throws CalculateDueDateException {
         Duration turnaroundTime = Duration.ofHours(workHours - 1);
 
-        LocalDateTime expectedResolveDate = LocalDateTime.of(2020, Month.AUGUST, 20, 16, 0);
-        LocalDateTime resolveDate = issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE, turnaroundTime);
+        LocalDateTime expectedResolveDate = LocalDateTime.of(2020, Month.AUGUST, 20, 16, 59);
+        LocalDateTime resolveDate = issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE, turnaroundTime);
         assertEquals(expectedResolveDate, resolveDate);
     }
 
@@ -45,13 +45,27 @@ class CalculateDueDate {
         Duration turnAroundTimeFullWorkDay = Duration.ofHours(workHours);
         Duration turnAroundTimeTwoFullWorkDays = Duration.ofHours(workHours * 2);
 
-        LocalDateTime expectedDueDateWithOneDay = LocalDateTime.of(2020, Month.AUGUST, 21, 9, 0);
-        LocalDateTime actualDueDateWithOneDay = issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE, turnAroundTimeFullWorkDay);
+        LocalDateTime expectedDueDateWithOneDay = LocalDateTime.of(2020, Month.AUGUST, 21, 9, 59);
+        LocalDateTime actualDueDateWithOneDay = issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE, turnAroundTimeFullWorkDay);
         assertEquals(expectedDueDateWithOneDay, actualDueDateWithOneDay);
 
-        LocalDateTime expectedDueDateWithTwoDays = LocalDateTime.of(2020, Month.AUGUST, 24, 9, 0);
-        LocalDateTime actualDueDateWithTwoDays = issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE, turnAroundTimeTwoFullWorkDays);
+        LocalDateTime expectedDueDateWithTwoDays = LocalDateTime.of(2020, Month.AUGUST, 24, 9, 59);
+        LocalDateTime actualDueDateWithTwoDays = issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE, turnAroundTimeTwoFullWorkDays);
         assertEquals(expectedDueDateWithTwoDays, actualDueDateWithTwoDays);
+    }
+
+    @Test
+    public void ShouldReturnCalculatedWorkdayDayWhenTurnaroundTimeIsAtDayEnd() throws CalculateDueDateException {
+        LocalDateTime submissionDate1 = LocalDateTime.of(2020, Month.AUGUST, 20, 9, 0);
+        LocalDateTime submissionDate2 = LocalDateTime.of(2020, Month.AUGUST, 20, 9, 1);
+
+        LocalDateTime expectedDueDate1 = LocalDateTime.of(2020, Month.AUGUST, 20, 17, 0);
+        LocalDateTime actualDueDate1 = issueTrackingSystemService.calculateDueDate(submissionDate1, POSITIVE_WHOLE_DAY_TURNAROUND);
+        assertEquals(expectedDueDate1, actualDueDate1);
+
+        LocalDateTime expectedDueDate2 = LocalDateTime.of(2020, Month.AUGUST, 21, 9, 1);
+        LocalDateTime actualDueDate2 = issueTrackingSystemService.calculateDueDate(submissionDate2, POSITIVE_WHOLE_DAY_TURNAROUND);
+        assertEquals(expectedDueDate2, actualDueDate2);
     }
 
     @Test
@@ -59,44 +73,44 @@ class CalculateDueDate {
         Duration turnAroundTime1 = Duration.ofHours(9);
         Duration turnAroundTime2 = Duration.ofHours(31);
 
-        LocalDateTime expectedDueDate1 = LocalDateTime.of(2020, Month.AUGUST, 21, 10, 0);
-        LocalDateTime actualDueDate1 = issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE, turnAroundTime1);
+        LocalDateTime expectedDueDate1 = LocalDateTime.of(2020, Month.AUGUST, 21, 10, 59);
+        LocalDateTime actualDueDate1 = issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE, turnAroundTime1);
         assertEquals(expectedDueDate1, actualDueDate1);
 
-        LocalDateTime expectedDueDate2 = LocalDateTime.of(2020, Month.AUGUST, 25, 16, 0);
-        LocalDateTime actualDueDate2 = issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE, turnAroundTime2);
+        LocalDateTime expectedDueDate2 = LocalDateTime.of(2020, Month.AUGUST, 25, 16, 59);
+        LocalDateTime actualDueDate2 = issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE, turnAroundTime2);
         assertEquals(expectedDueDate2, actualDueDate2);
     }
 
     @Test
     public void ShouldNotThrowExceptionWhenTurnaroundTimeIsPositive() throws CalculateDueDateException {
-        issueTrackingSystemService.validateTurnaroundTime(POSITIVE_TURNAROUND);
+        issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE, POSITIVE_WHOLE_DAY_TURNAROUND);
     }
 
     @Test
     public void ShouldThrowExceptionWhenTurnaroundTimeIsNegativeOrZero() {
-        assertThrows(Exception.class, () -> issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE, Duration.ZERO));
-        assertThrows(Exception.class, () -> issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE, Duration.ofHours(-5)));
+        assertThrows(Exception.class, () -> issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE, Duration.ZERO));
+        assertThrows(Exception.class, () -> issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE, Duration.ofHours(-5)));
     }
 
     @Test
     public void ShouldNotThrowExceptionWhenSubmissionDateIsOnAWorkday() throws CalculateDueDateException {
-        issueTrackingSystemService.validateSubmissionDate(SUBMISSION_DATE_INSIDE_WORKING_HOURS);
+        issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE_INSIDE_WORKING_HOURS, POSITIVE_WHOLE_DAY_TURNAROUND);
     }
 
     @Test
     public void ShouldThrowExceptionWhenSubmissionDateIsOutsideOfWorkHours() {
-        assertThrows(Exception.class, () -> issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE_OUTSIDE_WORKING_HOURS, POSITIVE_TURNAROUND));
+        assertThrows(Exception.class, () -> issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE_OUTSIDE_WORKING_HOURS, POSITIVE_WHOLE_DAY_TURNAROUND));
     }
 
     @Test
     public void ShouldThrowExceptionWhenSubmissionDateIsOnWeekend() {
-        assertThrows(Exception.class, () -> issueTrackingSystemService.CalculateDueDate(SUBMISSION_DATE_OUTSIDE_WORKING_DAYS, POSITIVE_TURNAROUND));
+        assertThrows(Exception.class, () -> issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE_OUTSIDE_WORKING_DAYS, POSITIVE_WHOLE_DAY_TURNAROUND));
     }
 
     @Test
     public void ShouldThrowExceptionWhenSubmissionDateIsNull() {
-        assertThrows(Exception.class, () -> issueTrackingSystemService.CalculateDueDate(null, POSITIVE_TURNAROUND));
+        assertThrows(Exception.class, () -> issueTrackingSystemService.calculateDueDate(null, POSITIVE_WHOLE_DAY_TURNAROUND));
     }
 
 }
