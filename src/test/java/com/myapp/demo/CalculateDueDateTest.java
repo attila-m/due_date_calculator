@@ -42,7 +42,7 @@ class CalculateDueDateTest {
     }
 
     @Test
-    public void ShouldReturnCalculatedWorkdayDayWhenTurnaroundTimeIsWholeWorkday() throws CalculateDueDateException {
+    public void ShouldReturnCorrectDueDateWhenTurnaroundTimeIsWholeWorkday() throws CalculateDueDateException {
         Duration turnAroundTimeFullWorkDay = Duration.ofHours(workHours);
         Duration turnAroundTimeTwoFullWorkDays = Duration.ofHours(workHours * 2);
 
@@ -56,7 +56,7 @@ class CalculateDueDateTest {
     }
 
     @Test
-    public void ShouldReturnCalculatedWorkdayDayWhenTurnaroundTimeIsAtDayEnd() throws CalculateDueDateException {
+    public void ShouldReturnCorrectDueDateWhenTurnaroundTimeIsAtDayEnd() throws CalculateDueDateException {
         LocalDateTime submissionDate1 = LocalDateTime.of(2020, Month.AUGUST, 20, 9, 0);
         LocalDateTime submissionDate2 = LocalDateTime.of(2020, Month.AUGUST, 20, 9, 1);
 
@@ -70,7 +70,7 @@ class CalculateDueDateTest {
     }
 
     @Test
-    public void ShouldReturnCalculatedWorkdayDayWhenTurnaroundTimeIsNotWholeWorkday() throws CalculateDueDateException {
+    public void ShouldReturnCorrectDueDateWhenTurnaroundTimeIsNotWholeWorkday() throws CalculateDueDateException {
         Duration turnAroundTime1 = Duration.ofHours(9);
         Duration turnAroundTime2 = Duration.ofHours(31);
         Duration turnAroundTime3 = Duration.ofHours(39);
@@ -88,6 +88,26 @@ class CalculateDueDateTest {
         LocalDateTime expectedDueDate3 = LocalDateTime.of(2020, Month.AUGUST, 27, 12, 12);
         LocalDateTime actualDueDate3 = issueTrackingSystemService.calculateDueDate(uniqueSubmissionDate, turnAroundTime3);
         assertEquals(expectedDueDate3, actualDueDate3);
+    }
+
+    @Test
+    public void ShouldReturnCorrectDueDateWhenTurnaroundTimeIsOneHour() throws CalculateDueDateException {
+        Duration turnAroundTime = Duration.ofHours(1);
+
+        LocalDateTime expectedDueDate1 = LocalDateTime.of(2020, Month.AUGUST, 20, 10, 59);
+        LocalDateTime actualDueDate1 = issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE, turnAroundTime);
+        assertEquals(expectedDueDate1, actualDueDate1);
+    }
+
+    @Test
+    public void ShouldReturnCorrectDueDateWhenDueDateIsNextMonth() throws CalculateDueDateException {
+        Duration turnAroundTime = Duration.ofHours(169);
+
+        LocalDateTime uniqueSubmissionDate = LocalDateTime.of(2020, Month.AUGUST, 3, 9, 0);
+
+        LocalDateTime expectedDueDate1 = LocalDateTime.of(2020, Month.SEPTEMBER, 1, 10, 0);
+        LocalDateTime actualDueDate1 = issueTrackingSystemService.calculateDueDate(uniqueSubmissionDate, turnAroundTime);
+        assertEquals(expectedDueDate1, actualDueDate1);
     }
 
     @Test

@@ -53,17 +53,16 @@ public class IssueTrackingSystemService {
     private long getRemainderDaysNeededForWorkInHours(long turnaroundHours, LocalDateTime submissionDate) {
         long hoursNeededForWork = turnaroundHours % configuration.getWorkHours();
         long actualHoursOfWork = 0;
+        LocalDateTime currentTime;
 
-        for (long i = 0; i < hoursNeededForWork; i++) {
-            if(!isWorkingHour(submissionDate.getHour() + hoursNeededForWork, submissionDate.getMinute())) {
-                if (submissionDate.getDayOfWeek() == DayOfWeek.FRIDAY) {
-                    actualHoursOfWork += 48;
-                }
-                actualHoursOfWork += 24 - configuration.getWorkHours();
-            } else {
-                actualHoursOfWork += 1;
+        for (long i = hoursNeededForWork; i > 0;) {
+            currentTime = submissionDate.plus(Duration.ofHours(actualHoursOfWork + 1));
+            if(isWorkingDay(currentTime.getDayOfWeek()) && isWorkingHour(currentTime.getHour(), submissionDate.getMinute())) {
+                i--;
             }
+            actualHoursOfWork++;
         }
+
         return actualHoursOfWork;
     }
 
@@ -75,7 +74,7 @@ public class IssueTrackingSystemService {
             if (isWorkingDay(dayOfWeek.plus(1))) {
                 i--;
                 dayOfWeek = dayOfWeek.plus(1);
-                actualDaysOfWork += 1;
+                actualDaysOfWork++;
             } else {
                 actualDaysOfWork += 2;
                 dayOfWeek = dayOfWeek.plus(2);
@@ -85,7 +84,7 @@ public class IssueTrackingSystemService {
     }
 
     private void validateSubmissionDate(LocalDateTime submissionDate) throws CalculateDueDateException {
-        if(submissionDate == null || !isWorkingDay(submissionDate.getDayOfWeek()) || !isWorkingHour(submissionDate.getHour(), submissionDate.getMinute())) {
+        if (submissionDate == null || !isWorkingDay(submissionDate.getDayOfWeek()) || !isWorkingHour(submissionDate.getHour(), submissionDate.getMinute())) {
             String errorMessage = submissionDate + " is outside of working hours. Working hours are between 9.00 to 17.00, from Monday to Friday.";
             LOGGER.error(errorMessage);
             throw new CalculateDueDateException(errorMessage);
@@ -93,7 +92,7 @@ public class IssueTrackingSystemService {
     }
 
     private void validateTurnaroundTime(Duration turnaroundTime) throws CalculateDueDateException {
-        if(!isTurnaroundTimeGreaterThanZero(turnaroundTime)) {
+        if (!isTurnaroundTimeGreaterThanZero(turnaroundTime)) {
             String errorMessage = turnaroundTime + " is not a valid value. Turnaround time should be more than zero.";
             LOGGER.error(errorMessage);
             throw new CalculateDueDateException(errorMessage);
