@@ -20,7 +20,7 @@ Logging is done via Log4J.
 
 ### Testing
 Unit tests are available for calculation method and it is also possible to test the method via the following api call:
-/issue/getduedate?submission=<yyyy-MM-dd HH:mm:ss>&turnaround=<long>
+'/issue/getduedate?submission=<yyyy-MM-dd HH:mm:ss>&turnaround=<long>'
 Should return your calculated due date and its generated id.
 
 ## Details of the task
