@@ -2,6 +2,7 @@ package com.myapp.demo;
 
 import com.myapp.demo.exception.CalculateDueDateException;
 import com.myapp.demo.service.IssueTrackingSystemService;
+import org.apache.tomcat.jni.Local;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
-class CalculateDueDate {
+class CalculateDueDateTest {
 
     @Autowired
     IssueTrackingSystemService issueTrackingSystemService;
@@ -72,6 +73,7 @@ class CalculateDueDate {
     public void ShouldReturnCalculatedWorkdayDayWhenTurnaroundTimeIsNotWholeWorkday() throws CalculateDueDateException {
         Duration turnAroundTime1 = Duration.ofHours(9);
         Duration turnAroundTime2 = Duration.ofHours(31);
+        Duration turnAroundTime3 = Duration.ofHours(39);
 
         LocalDateTime expectedDueDate1 = LocalDateTime.of(2020, Month.AUGUST, 21, 10, 59);
         LocalDateTime actualDueDate1 = issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE, turnAroundTime1);
@@ -80,6 +82,12 @@ class CalculateDueDate {
         LocalDateTime expectedDueDate2 = LocalDateTime.of(2020, Month.AUGUST, 25, 16, 59);
         LocalDateTime actualDueDate2 = issueTrackingSystemService.calculateDueDate(SUBMISSION_DATE, turnAroundTime2);
         assertEquals(expectedDueDate2, actualDueDate2);
+
+        LocalDateTime uniqueSubmissionDate = LocalDateTime.of(2020, Month.AUGUST, 20, 13, 12);
+
+        LocalDateTime expectedDueDate3 = LocalDateTime.of(2020, Month.AUGUST, 27, 12, 12);
+        LocalDateTime actualDueDate3 = issueTrackingSystemService.calculateDueDate(uniqueSubmissionDate, turnAroundTime3);
+        assertEquals(expectedDueDate3, actualDueDate3);
     }
 
     @Test
